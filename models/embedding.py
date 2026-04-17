@@ -1,4 +1,4 @@
-"""Embedding 封装：同步 + 异步并发，通过 dashscope SDK 调用百炼多模态模型。"""
+"""Embedding 封装：同步 + 异步并发，通过 Jina AI API 调用嵌入模型。"""
 
 from __future__ import annotations
 
@@ -6,46 +6,52 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from typing import List
 
-import dashscope
-from dashscope import MultiModalEmbedding, MultiModalEmbeddingItemText
+import requests
 from langchain_core.embeddings import Embeddings
 
 import config
 
-# 线程池供异步方法复用（dashscope SDK 是同步的，需要包装）
+# 线程池供异步方法复用
 _executor = ThreadPoolExecutor(max_workers=config.EMBEDDING_CONCURRENCY)
 
 
-class DashScopeEmbedding(Embeddings):
-    """通过 dashscope SDK 调用百炼 Embedding 模型。
+class JinaEmbedding(Embeddings):
+    """通过 Jina AI API 调用 Embedding 模型。
 
     同步方法：embed_documents / embed_query（逐条串行）
     异步方法：aembed_documents / aembed_query（并发，受 EMBEDDING_CONCURRENCY 控制）
     """
 
     model: str = config.EMBEDDING_MODEL
-    dimension: int = 1024
+    api_url: str = "https://api.jina.ai/v1/embeddings"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        dashscope.api_key = config.DASHSCOPE_API_KEY
-
-    # ── 单条同步调用（内部基础方法）─────────────────────
+        if not config.JINA_API_KEY:
+            raise ValueError("JINA_API_KEY 未配置，请在 .env 文件中设置")
 
     def _embed_one(self, text: str) -> List[float]:
-        """同步调用一次 Embedding API。"""
-        resp = MultiModalEmbedding.call(
-            model=self.model,
-            input=[MultiModalEmbeddingItemText(text=text, factor=1)],
-            dimension=self.dimension,
-        )
+        """同步调用一次 Jina Embedding API。"""
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {config.JINA_API_KEY}"
+        }
+        
+        payload = {
+            "model": self.model,
+            "input": [text],
+            "task": "retrieval.passage"
+        }
+        
+        resp = requests.post(self.api_url, json=payload, headers=headers)
+        
         if resp.status_code != 200:
             raise RuntimeError(
-                f"Embedding 调用失败: {resp.code} - {resp.message}"
+                f"Embedding 调用失败: {resp.status_code} - {resp.text}"
             )
-        return resp.output["embeddings"][0]["embedding"]
-
-    # ── 同步接口（LangChain 基类要求）─────────────────
+        
+        result = resp.json()
+        return result["data"][0]["embedding"]
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """同步串行：对文档列表生成 embedding。"""
@@ -54,8 +60,6 @@ class DashScopeEmbedding(Embeddings):
     def embed_query(self, text: str) -> List[float]:
         """同步：对单条查询生成 embedding。"""
         return self._embed_one(text)
-
-    # ── 异步并发接口 ─────────────────────────────────
 
     async def _aembed_one(
         self, text: str, semaphore: asyncio.Semaphore

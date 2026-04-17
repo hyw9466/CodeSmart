@@ -9,10 +9,10 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 
 import config
-from models.embedding import DashScopeEmbedding
+from models.embedding import JinaEmbedding
 
 # 模块级单例
-_embedding = DashScopeEmbedding()
+_embedding = JinaEmbedding()
 _store: Optional[FAISS] = None
 
 

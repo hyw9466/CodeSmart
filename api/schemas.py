@@ -25,3 +25,21 @@ class SummaryRequest(BaseModel):
 class SummaryResponse(BaseModel):
     summary: str
     filename: str
+
+
+class CodeCompletionRequest(BaseModel):
+    code: str
+    language: str
+    line: int
+    column: int
+
+
+class CodeCompletionItem(BaseModel):
+    label: str
+    kind: str
+    documentation: Optional[str] = None
+    insertText: str
+
+
+class CodeCompletionResponse(BaseModel):
+    completions: list[CodeCompletionItem]

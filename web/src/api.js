@@ -77,3 +77,16 @@ export async function streamChat(query, sessionId, onToken, onDone) {
   }
   onDone?.()
 }
+
+export async function getCodeCompletion(code, language, line, column) {
+  const res = await fetch(`${BASE}/code/completion`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, language, line, column }),
+  })
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.detail || '代码补全失败')
+  }
+  return res.json()
+}

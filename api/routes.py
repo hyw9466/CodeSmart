@@ -7,12 +7,14 @@ from fastapi.responses import StreamingResponse
 import config
 from api.schemas import (
     ChatRequest, ChatResponse, UploadResponse, SummaryRequest, SummaryResponse,
+    CodeCompletionRequest, CodeCompletionResponse, CodeCompletionItem
 )
 from document.loader import load_file, split_documents, SUPPORTED_EXTENSIONS
 from vectorstore.store import add_documents, async_add_documents, has_index
 from vectorstore.registry import compute_hash, is_duplicate, register_file, list_documents
 from chains.rag_chain import build_rag_chain, stream_rag_chain
 from chains.summary_chain import summarize_text, stream_summarize
+from chains.code_completion_chain import generate_completions
 from agent.agent import run_agent, stream_agent, get_session_history, list_sessions
 
 router = APIRouter()
@@ -165,3 +167,31 @@ async def summary_stream(req: SummaryRequest):
         yield _sse_done()
 
     return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+@router.post("/code/completion", response_model=CodeCompletionResponse)
+async def code_completion(req: CodeCompletionRequest):
+    """代码补全。"""
+    try:
+        # 生成代码补全建议
+        completions_data = generate_completions(
+            req.code,
+            req.language,
+            req.line,
+            req.column
+        )
+        
+        # 转换为响应模型
+        completions = [
+            CodeCompletionItem(
+                label=item.get("label", ""),
+                kind=item.get("kind", "Text"),
+                documentation=item.get("documentation"),
+                insertText=item.get("insertText", "")
+            )
+            for item in completions_data
+        ]
+        
+        return CodeCompletionResponse(completions=completions)
+    except Exception as e:
+        raise HTTPException(500, f"代码补全失败: {str(e)}")

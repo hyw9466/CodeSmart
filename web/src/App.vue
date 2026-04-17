@@ -2,6 +2,7 @@
 import { ref, reactive, nextTick, watch, onMounted } from 'vue'
 import Sidebar from './components/Sidebar.vue'
 import ChatMessage from './components/ChatMessage.vue'
+import CodeEditor from './components/CodeEditor.vue'
 import { streamChat, uploadFile, getSessions, getSessionMessages } from './api.js'
 
 // 会话管理
@@ -53,6 +54,21 @@ const inputText = ref('')
 const isStreaming = ref(false)
 const chatContainer = ref(null)
 
+// 代码编辑器
+const showCodeEditor = ref(false)
+const codeContent = ref('')
+const codeLanguage = ref('python')
+const codeLanguages = [
+  { value: 'python', label: 'Python' },
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'typescript', label: 'TypeScript' },
+  { value: 'java', label: 'Java' },
+  { value: 'csharp', label: 'C#' },
+  { value: 'cpp', label: 'C++' },
+  { value: 'go', label: 'Go' },
+  { value: 'rust', label: 'Rust' }
+]
+
 function scrollToBottom() {
   nextTick(() => {
     if (chatContainer.value) {
@@ -100,6 +116,20 @@ function handleKeydown(e) {
     e.preventDefault()
     sendMessage()
   }
+}
+
+function sendCodeToChat() {
+  if (!codeContent.value.trim()) return
+  
+  // 切换到对话模式
+  showCodeEditor.value = false
+  
+  // 构造代码消息
+  const codeMessage = `\`\`\`${codeLanguage.value}\n${codeContent.value}\n\`\`\``
+  
+  // 发送到对话
+  inputText.value = codeMessage
+  sendMessage()
 }
 
 // 文件上传
@@ -176,30 +206,88 @@ function onInputAreaDrop(e) {
 
     <!-- 主区域 -->
     <div class="flex-1 flex flex-col">
-      <!-- 对话区域 -->
-      <div ref="chatContainer" class="flex-1 overflow-y-auto">
-        <!-- 空状态 -->
-        <div
-          v-if="!currentSession.messages.length"
-          class="h-full flex flex-col items-center justify-center text-gray-500"
-        >
-          <div class="text-5xl mb-4">🔍</div>
-          <div class="text-lg font-medium mb-2">代码分析助手</div>
-          <div class="text-sm max-w-md text-center">
-            粘贴代码让我帮你审查，或上传文档构建知识库。<br />
-            支持代码审查、安全分析、性能诊断、重构建议。
+      <!-- 工具栏 -->
+      <div class="border-b border-gray-800 p-2 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <button
+            class="px-3 py-1.5 text-sm rounded-lg"
+            :class="!showCodeEditor ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'"
+            @click="showCodeEditor = false"
+          >
+            💬 对话
+          </button>
+          <button
+            class="px-3 py-1.5 text-sm rounded-lg"
+            :class="showCodeEditor ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'"
+            @click="showCodeEditor = true"
+          >
+            💻 代码编辑器
+          </button>
+        </div>
+        <div v-if="showCodeEditor" class="flex items-center gap-2">
+          <label class="text-xs text-gray-400">语言：</label>
+          <select
+            v-model="codeLanguage"
+            class="bg-gray-800 border border-gray-700 rounded-lg text-sm px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500"
+          >
+            <option v-for="lang in codeLanguages" :key="lang.value" :value="lang.value">
+              {{ lang.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 内容区域 -->
+      <div class="flex-1 overflow-y-auto">
+        <!-- 对话区域 -->
+        <div v-if="!showCodeEditor" ref="chatContainer" class="h-full">
+          <!-- 空状态 -->
+          <div
+            v-if="!currentSession.messages.length"
+            class="h-full flex flex-col items-center justify-center text-gray-500"
+          >
+            <div class="text-5xl mb-4">🔍</div>
+            <div class="text-lg font-medium mb-2">代码分析助手</div>
+            <div class="text-sm max-w-md text-center">
+              粘贴代码让我帮你审查，或上传文档构建知识库。<br />
+              支持代码审查、安全分析、性能诊断、重构建议。
+            </div>
+          </div>
+
+          <!-- 消息列表 -->
+          <div v-else class="py-4">
+            <ChatMessage
+              v-for="(msg, i) in currentSession.messages"
+              :key="i"
+              :role="msg.role"
+              :content="msg.content"
+              :loading="msg.loading"
+            />
           </div>
         </div>
 
-        <!-- 消息列表 -->
-        <div v-else class="py-4">
-          <ChatMessage
-            v-for="(msg, i) in currentSession.messages"
-            :key="i"
-            :role="msg.role"
-            :content="msg.content"
-            :loading="msg.loading"
-          />
+        <!-- 代码编辑器区域 -->
+        <div v-else class="h-full p-4">
+          <div class="h-full">
+            <CodeEditor
+              v-model="codeContent"
+              :language="codeLanguage"
+            />
+          </div>
+          <div class="mt-4 flex gap-2">
+            <button
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+              @click="sendCodeToChat"
+            >
+              📤 发送代码到对话
+            </button>
+            <button
+              class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors"
+              @click="codeContent = ''"
+            >
+              🗑️ 清空
+            </button>
+          </div>
         </div>
       </div>
 
