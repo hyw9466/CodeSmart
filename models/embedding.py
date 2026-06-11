@@ -24,6 +24,7 @@ class JinaEmbedding(Embeddings):
 
     model: str = config.EMBEDDING_MODEL
     api_url: str = "https://api.jina.ai/v1/embeddings"
+    timeout: int = 30  # 请求超时时间（秒）
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -43,7 +44,25 @@ class JinaEmbedding(Embeddings):
             "task": "retrieval.passage"
         }
         
-        resp = requests.post(self.api_url, json=payload, headers=headers)
+        try:
+            resp = requests.post(
+                self.api_url, 
+                json=payload, 
+                headers=headers,
+                timeout=self.timeout  # 添加超时配置
+            )
+        except requests.exceptions.Timeout:
+            raise RuntimeError(
+                f"Embedding API 连接超时（{self.timeout}秒）。"
+                "请检查网络连接，或尝试使用代理。"
+            )
+        except requests.exceptions.ConnectionError:
+            raise RuntimeError(
+                "无法连接到 Embedding API。"
+                "请检查网络连接，或确认 JINA_API_KEY 是否已正确配置。"
+            )
+        except Exception as e:
+            raise RuntimeError(f"Embedding 调用异常: {str(e)}")
         
         if resp.status_code != 200:
             raise RuntimeError(

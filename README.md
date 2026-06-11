@@ -1,4 +1,4 @@
-# CodeLens - 智能代码分析助手
+# CodeSmart - 智能代码分析助手
 
 基于 RAG（检索增强生成）与 LLM Agent 架构的智能代码分析系统。支持代码审查、安全分析、性能诊断、重构建议，内置多维度专家知识库，可通过上传文档持续扩展知识。
 
@@ -78,7 +78,7 @@ cd CodeLens
 python -m venv .venv
 
 # 激活虚拟环境（Windows PowerShell）
-.venv/Scripts/Activate.ps1
+.\.venv\Scripts\Activate.ps1
 
 pip install -r requirements.txt
 
@@ -99,7 +99,7 @@ cd ..
 
 ```powershell
 # 终端 1：启动后端
-.venv/Scripts/python -m uvicorn main:app --host 0.0.0.0 --port 8000
+.venv\Scripts\python -m uvicorn main:app --host 0.0.0.0 --port 8001
 
 # 终端 2：启动前端
 cd web
