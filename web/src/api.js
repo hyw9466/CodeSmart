@@ -35,10 +35,10 @@ export async function getSessionMessages(sessionId) {
  * 流式 Agent 对话，通过 SSE 逐 token 回调
  * @param {string} query
  * @param {string} sessionId
- * @param {(token: string) => void} onToken
+ * @param {(event: { type: string, content: string, name?: string }) => void} onEvent
  * @param {() => void} onDone
  */
-export async function streamChat(query, sessionId, onToken, onDone) {
+export async function streamChat(query, sessionId, onEvent, onDone) {
   const res = await fetch(`${BASE}/agent/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -69,8 +69,8 @@ export async function streamChat(query, sessionId, onToken, onDone) {
           return
         }
         try {
-          const token = JSON.parse(payload)
-          onToken?.(token)
+          const event = JSON.parse(payload)
+          onEvent?.(event)
         } catch {}
       }
     }

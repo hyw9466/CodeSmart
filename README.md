@@ -99,7 +99,7 @@ cd ..
 
 ```powershell
 # 终端 1：启动后端
-.venv\Scripts\python -m uvicorn main:app --host 0.0.0.0 --port 8001
+.venv\Scripts\python -m uvicorn main:app --host 0.0.0.0 --port 8000
 
 # 终端 2：启动前端
 cd web

@@ -86,7 +86,13 @@ async function sendMessage() {
   inputText.value = ''
   scrollToBottom()
 
-  const aiMsg = reactive({ role: 'assistant', content: '', loading: true })
+  const aiMsg = reactive({ 
+    role: 'assistant', 
+    content: '', 
+    loading: true,
+    thinking: true,
+    toolCalls: []
+  })
   msgs.push(aiMsg)
   isStreaming.value = true
   scrollToBottom()
@@ -98,15 +104,56 @@ async function sendMessage() {
   await streamChat(
     query,
     currentSessionId.value,
-    (token) => {
-      aiMsg.content += token
-      aiMsg.loading = false
+    (event) => {
+      // 调试日志
+      console.log('Received event:', event)
+      
+      // 处理不同类型的事件
+      switch (event.type) {
+        case 'thinking':
+          aiMsg.thinking = true
+          aiMsg.content = event.content
+          console.log('Set thinking:', aiMsg.thinking)
+          break
+        case 'tool_call':
+          aiMsg.thinking = false
+          aiMsg.loading = true
+          // 添加工具调用记录
+          const existingTool = aiMsg.toolCalls.find(t => t.name === event.name)
+          if (!existingTool) {
+            aiMsg.toolCalls.push({ name: event.name, status: 'calling' })
+            console.log('Added tool call:', event.name, 'Total tools:', aiMsg.toolCalls.length)
+          }
+          break
+        case 'tool_result':
+          // 更新工具调用状态为已完成
+          const tool = aiMsg.toolCalls.find(t => t.name === event.name)
+          if (tool) {
+            tool.status = 'done'
+            console.log('Tool completed:', event.name)
+          }
+          break
+        case 'token':
+          aiMsg.thinking = false
+          aiMsg.loading = true
+          aiMsg.content += event.content
+          break
+        default:
+          // 兼容旧的字符串 token
+          if (typeof event === 'string') {
+            aiMsg.thinking = false
+            aiMsg.loading = true
+            aiMsg.content += event
+          }
+      }
       scrollToBottom()
     },
     () => {
       aiMsg.loading = false
+      aiMsg.thinking = false
       isStreaming.value = false
       scrollToBottom()
+      console.log('Streaming done')
     }
   )
 }
@@ -262,6 +309,8 @@ function onInputAreaDrop(e) {
               :role="msg.role"
               :content="msg.content"
               :loading="msg.loading"
+              :thinking="msg.thinking"
+              :tool-calls="msg.toolCalls"
             />
           </div>
         </div>

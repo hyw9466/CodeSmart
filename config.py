@@ -3,12 +3,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# 嵌入模型配置（Jina）
-EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "jina-embeddings-v3")
-JINA_API_KEY: str = os.getenv("JINA_API_KEY", "")
+# 嵌入模型配置（阿里云 DashScope）
+EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "tongyi-embedding-vision-plus")
 
 # 聊天模型配置（阿里云 DashScope）
-LLM_MODEL: str = os.getenv("LLM_MODEL", "qwen-plus")
+LLM_MODEL: str = os.getenv("LLM_MODEL", "qwen3.6-plus")
 DASHSCOPE_API_KEY: str = os.getenv("DASHSCOPE_API_KEY", "")
 LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 
