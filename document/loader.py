@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import List
+from typing import List, Tuple
 
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -53,6 +53,26 @@ def _load_docx(file_path: str) -> str:
 
     doc = DocxDocument(file_path)
     return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+
+
+def validate_and_load(file_path: str) -> Tuple[str, bool, str]:
+    """验证文档并加载文本。
+
+    返回：(文本内容, 是否有效, 状态消息)
+    """
+    ext = os.path.splitext(file_path)[1].lower()
+    text = load_file(file_path)
+    char_count = len(text.strip())
+
+    if char_count == 0:
+        if ext == ".pdf":
+            return "", False, "PDF可能是扫描版或图片型PDF，请转换为文本型PDF后重试"
+        elif ext == ".docx":
+            return "", False, "Word文档内容为空，请检查文档是否有文字内容"
+        else:
+            return "", False, "文档内容为空"
+
+    return text, True, f"成功提取 {char_count} 个字符"
 
 
 def split_documents(

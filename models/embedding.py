@@ -1,4 +1,4 @@
-"""Embedding 封装：同步 + 异步并发，通过阿里云 DashScope API 调用嵌入模型。"""
+"""Embedding 封装：同步 + 异步并发，通过 Jina AI API 调用嵌入模型。"""
 
 from __future__ import annotations
 
@@ -15,34 +15,34 @@ import config
 _executor = ThreadPoolExecutor(max_workers=config.EMBEDDING_CONCURRENCY)
 
 
-class DashScopeEmbedding(Embeddings):
-    """通过阿里云 DashScope API 调用 Embedding 模型。
+class JinaEmbedding(Embeddings):
+    """通过 Jina AI API 调用 Embedding 模型。
 
-    支持模型：tongyi-embedding-vision-plus, text-embedding-v2, text-embedding-v3 等
+    支持模型：jina-embeddings-v3 等
     
     同步方法：embed_documents / embed_query（逐条串行）
     异步方法：aembed_documents / aembed_query（并发，受 EMBEDDING_CONCURRENCY 控制）
     """
 
     model: str = config.EMBEDDING_MODEL
-    api_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings"
-    timeout: int = 30  # 请求超时时间（秒）
+    api_url: str = "https://api.jina.ai/v1/embeddings"
+    timeout: int = 60  # 请求超时时间（秒）
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        if not config.DASHSCOPE_API_KEY:
-            raise ValueError("DASHSCOPE_API_KEY 未配置，请在 .env 文件中设置")
+        if not config.JINA_API_KEY:
+            raise ValueError("JINA_API_KEY 未配置，请在 .env 文件中设置")
 
     def _embed_one(self, text: str) -> List[float]:
-        """同步调用一次 DashScope Embedding API。"""
+        """同步调用一次 Jina Embedding API。"""
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {config.DASHSCOPE_API_KEY}"
+            "Authorization": f"Bearer {config.JINA_API_KEY}"
         }
         
         payload = {
             "model": self.model,
-            "input": [text]
+            "input": text
         }
         
         try:
@@ -60,7 +60,7 @@ class DashScopeEmbedding(Embeddings):
         except requests.exceptions.ConnectionError:
             raise RuntimeError(
                 "无法连接到 Embedding API。"
-                "请检查网络连接，或确认 DASHSCOPE_API_KEY 是否已正确配置。"
+                "请检查网络连接，或确认 JINA_API_KEY 是否已正确配置。"
             )
         except Exception as e:
             raise RuntimeError(f"Embedding 调用异常: {str(e)}")

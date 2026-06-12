@@ -9,13 +9,13 @@ from api.schemas import (
     ChatRequest, ChatResponse, UploadResponse, SummaryRequest, SummaryResponse,
     CodeCompletionRequest, CodeCompletionResponse, CodeCompletionItem
 )
-from document.loader import load_file, split_documents, SUPPORTED_EXTENSIONS
+from document.loader import load_file, split_documents, validate_and_load, SUPPORTED_EXTENSIONS
 from vectorstore.store import add_documents, async_add_documents, has_index
 from vectorstore.registry import compute_hash, is_duplicate, register_file, list_documents
 from chains.rag_chain import build_rag_chain, stream_rag_chain
 from chains.summary_chain import summarize_text, stream_summarize
 from chains.code_completion_chain import generate_completions
-from agent.agent import run_agent, stream_agent, get_session_history, list_sessions
+from agent.agent import run_agent, stream_agent, get_session_history, list_sessions, add_document_to_session
 
 router = APIRouter()
 
@@ -40,8 +40,8 @@ async def ping():
 
 
 @router.post("/upload", response_model=UploadResponse)
-async def upload_document(file: UploadFile = File(...)):
-    """上传文档，解析分块后写入向量库。支持 .md / .txt / .pdf / .docx"""
+async def upload_document(file: UploadFile = File(...), session_id: str = "default"):
+    """上传文档，将内容保存到当前会话中。支持 .md / .txt / .pdf / .docx"""
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in SUPPORTED_EXTENSIONS:
         raise HTTPException(
@@ -50,28 +50,36 @@ async def upload_document(file: UploadFile = File(...)):
 
     content = await file.read()
 
-    # 去重检查：同名 + 同内容 hash 则跳过
-    content_hash = compute_hash(content)
-    if is_duplicate(file.filename, content_hash):
-        raise HTTPException(
-            409, f"文件 {file.filename} 已存在且内容未变化，无需重复上传"
-        )
-
+    # 保存文件到临时目录（供后续可能的摘要等操作使用）
     save_path = os.path.join(config.UPLOAD_DIR, file.filename)
     with open(save_path, "wb") as f:
         f.write(content)
 
-    text = load_file(save_path)
-    docs = split_documents(text, file.filename)
-    count = await async_add_documents(docs)
+    # 验证文档内容
+    text, is_valid, validate_msg = validate_and_load(save_path)
+    if not is_valid:
+        return UploadResponse(
+            filename=file.filename,
+            chunks=0,
+            char_count=0,
+            status="error",
+            message=validate_msg,
+            session_id=session_id,
+        )
 
-    # 入库成功后注册
-    register_file(file.filename, content_hash)
+    # 将文档内容添加到会话历史中（不保存到向量库）
+    add_document_to_session(file.filename, text, session_id)
+
+    # 计算分块数（仅用于展示，不实际入库）
+    docs = split_documents(text, file.filename)
 
     return UploadResponse(
         filename=file.filename,
-        chunks=count,
-        message=f"成功处理 {count} 个文档片段",
+        chunks=len(docs),
+        char_count=len(text.strip()),
+        status="success",
+        message=f"成功将文档内容添加到会话中，共 {len(text.strip())} 个字符，{len(docs)} 个片段",
+        session_id=session_id,
     )
 
 

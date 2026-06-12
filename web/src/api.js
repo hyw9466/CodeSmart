@@ -5,9 +5,10 @@ export async function checkHealth() {
   return res.json()
 }
 
-export async function uploadFile(file) {
+export async function uploadFile(file, sessionId = 'default') {
   const form = new FormData()
   form.append('file', file)
+  form.append('session_id', sessionId)
   const res = await fetch(`${BASE}/upload`, { method: 'POST', body: form })
   if (!res.ok) {
     const err = await res.json()

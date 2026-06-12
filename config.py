@@ -3,8 +3,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# 嵌入模型配置（阿里云 DashScope）
-EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "tongyi-embedding-vision-plus")
+# 嵌入模型配置
+EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "jina-embeddings-v3")
+JINA_API_KEY: str = os.getenv("JINA_API_KEY", "")
 
 # 聊天模型配置（阿里云 DashScope）
 LLM_MODEL: str = os.getenv("LLM_MODEL", "qwen3.6-plus")
@@ -24,7 +25,4 @@ MEMORY_WINDOW_K: int = 3
 CHAT_HISTORY_DIR: str = os.path.join(os.path.dirname(__file__), "chat_history")
 
 # Embedding 并发数（控制同时发出的 API 请求数）
-EMBEDDING_CONCURRENCY: int = int(os.getenv("EMBEDDING_CONCURRENCY", "1"))
-
-
-
+EMBEDDING_CONCURRENCY: int = int(os.getenv("EMBEDDING_CONCURRENCY", "3"))

@@ -4,26 +4,26 @@ import { uploadFile } from '../api.js'
 
 const emit = defineEmits(['uploaded'])
 const uploading = ref(false)
-const message = ref('')
+const lastResult = ref(null)
 
 async function handleFiles(e) {
   const files = e.target.files || e.dataTransfer?.files
   if (!files?.length) return
 
   uploading.value = true
-  message.value = ''
+  lastResult.value = null
 
   for (const file of files) {
     try {
       const result = await uploadFile(file)
-      message.value = `✅ ${result.message}`
+      lastResult.value = result
       emit('uploaded', result)
     } catch (err) {
-      message.value = `❌ ${err.message}`
+      lastResult.value = { status: 'error', message: err.message }
     }
   }
   uploading.value = false
-  e.target.value = '' // 重置 input
+  e.target.value = ''
 }
 
 function onDrop(e) {
@@ -52,8 +52,21 @@ function onDrop(e) {
         <span v-else>📎 点击或拖拽上传文档（.md / .txt / .pdf / .docx）</span>
       </div>
     </label>
-    <div v-if="message" class="mt-2 text-xs" :class="message.startsWith('✅') ? 'text-green-400' : 'text-red-400'">
-      {{ message }}
+
+    <!-- 上传结果详情 -->
+    <div v-if="lastResult" class="mt-3 text-sm text-left">
+      <div v-if="lastResult.status === 'success'" class="text-green-400 space-y-1">
+        <div class="font-medium">✅ {{ lastResult.filename }}</div>
+        <div class="text-xs text-gray-400 ml-2">
+          <span>📄 {{ lastResult.chunks }} 个片段</span>
+          <span class="ml-2">📝 {{ lastResult.char_count }} 个字符</span>
+        </div>
+        <div class="text-xs text-green-500 mt-1">{{ lastResult.message }}</div>
+      </div>
+      <div v-else-if="lastResult.status === 'error'" class="text-red-400">
+        <div class="font-medium">❌ {{ lastResult.filename || '上传失败' }}</div>
+        <div class="text-xs text-red-400 mt-1">{{ lastResult.message }}</div>
+      </div>
     </div>
   </div>
 </template>
