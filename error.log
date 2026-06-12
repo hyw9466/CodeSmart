@@ -1,0 +1,12 @@
+INFO:     Started server process [37992]
+INFO:     Waiting for application startup.
+INFO:main:正在加载预置知识库...
+INFO:main:  \u23ed\ufe0f  跳过: code_quality.md (已入库且未变化)
+INFO:main:  \u23ed\ufe0f  跳过: security.md (已入库且未变化)
+INFO:main:  \u23ed\ufe0f  跳过: performance.md (已入库且未变化)
+INFO:main:  \u23ed\ufe0f  跳过: design_patterns.md (已入库且未变化)
+INFO:main:  \u23ed\ufe0f  跳过: refactoring.md (已入库且未变化)
+INFO:main:  \u23ed\ufe0f  跳过: code_review.md (已入库且未变化)
+INFO:main:知识库加载完成: 0 新增, 6 跳过
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8081 (Press CTRL+C to quit)

@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  code-analysis-assistant:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: code-analysis-assistant
+    ports:
+      - "8000:8000"
+    environment:
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-tongyi-embedding-vision-plus}
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
+      - LLM_MODEL=${LLM_MODEL:-qwen3.6-plus}
+      - LLM_BASE_URL=${LLM_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
