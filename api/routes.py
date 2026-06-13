@@ -10,8 +10,8 @@ from api.schemas import (
     CodeCompletionRequest, CodeCompletionResponse, CodeCompletionItem
 )
 from document.loader import load_file, split_documents, validate_and_load, SUPPORTED_EXTENSIONS
-from vectorstore.store import add_documents, async_add_documents, has_index
-from vectorstore.registry import compute_hash, is_duplicate, register_file, list_documents
+from vectorstore.store import add_documents, async_add_documents, has_index, delete_documents_by_source
+from vectorstore.registry import compute_hash, is_duplicate, register_file, unregister_file, list_documents
 from chains.rag_chain import build_rag_chain, stream_rag_chain
 from chains.summary_chain import summarize_text, stream_summarize
 from chains.code_completion_chain import generate_completions
@@ -96,6 +96,42 @@ async def get_documents():
     """查看已入库的文档列表。"""
     docs = list_documents()
     return {"count": len(docs), "documents": docs}
+
+
+@router.delete("/documents/{filename}")
+async def delete_document(filename: str):
+    """删除指定文档（从注册表和向量库中同时移除）。"""
+    # 1. 从注册表删除
+    unregistered = unregister_file(filename)
+    if not unregistered:
+        raise HTTPException(404, f"文档 '{filename}' 不在知识库中")
+
+    # 2. 从向量库删除相关片段
+    deleted_count = delete_documents_by_source(filename)
+
+    return {
+        "message": f"成功删除文档 '{filename}'",
+        "deleted_chunks": deleted_count,
+    }
+
+
+@router.delete("/documents")
+async def delete_all_documents():
+    """清空整个知识库（删除所有文档）。"""
+    docs = list_documents()
+    if not docs:
+        return {"message": "知识库已经是空的"}
+
+    deleted_count = 0
+    for doc in docs:
+        delete_documents_by_source(doc["filename"])
+        unregister_file(doc["filename"])
+        deleted_count += 1
+
+    return {
+        "message": f"已清空知识库，共删除 {deleted_count} 个文档",
+        "deleted_count": deleted_count,
+    }
 
 
 @router.get("/sessions")

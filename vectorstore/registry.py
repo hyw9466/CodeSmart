@@ -52,6 +52,16 @@ def list_documents() -> List[Dict[str, str]]:
     return [{"filename": k, "hash": v[:12]} for k, v in registry.items()]
 
 
+def unregister_file(filename: str) -> bool:
+    """从注册表中删除指定文件的记录。返回是否成功删除。"""
+    registry = _load_registry()
+    if filename in registry:
+        del registry[filename]
+        _save_registry(registry)
+        return True
+    return False
+
+
 def get_document_count() -> int:
     """获取已入库文档数量。"""
     return len(_load_registry())

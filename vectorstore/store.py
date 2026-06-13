@@ -80,3 +80,55 @@ def get_retriever(k: int = 4):
 def has_index() -> bool:
     """检查是否已有可用索引。"""
     return _get_store() is not None
+
+
+def delete_documents_by_source(source_filename: str) -> int:
+    """根据源文件名删除向量库中的相关文档片段。
+
+    注意：FAISS 不支持单个向量删除，采用重建索引方式。
+    返回删除的片段数量。
+    """
+    global _store
+    store = _get_store()
+    if store is None:
+        return 0
+
+    # 获取所有文档及其 metadata
+    all_docs = store.docstore._dict
+
+    # 筛选出不删除的文档
+    docs_to_keep = []
+    deleted_count = 0
+    for doc_id, doc in all_docs.items():
+        if doc.metadata.get("source") == source_filename:
+            deleted_count += 1
+        else:
+            docs_to_keep.append(doc)
+
+    if deleted_count == 0:
+        return 0
+
+    # 重建索引
+    if docs_to_keep:
+        # 重新生成 embedding
+        import asyncio
+        texts = [doc.page_content for doc in docs_to_keep]
+        embeddings = asyncio.run(_embedding.aembed_documents(texts))
+        text_embedding_pairs = list(zip(texts, embeddings))
+        metadatas = [doc.metadata for doc in docs_to_keep]
+        _store = FAISS.from_embeddings(
+            text_embedding_pairs, _embedding, metadatas=metadatas
+        )
+    else:
+        # 没有剩余文档，清空索引
+        _store = None
+        # 删除索引文件
+        import shutil
+        index_dir = config.FAISS_INDEX_DIR
+        if os.path.exists(index_dir):
+            shutil.rmtree(index_dir)
+        os.makedirs(index_dir, exist_ok=True)
+        return deleted_count
+
+    _store.save_local(config.FAISS_INDEX_DIR)
+    return deleted_count

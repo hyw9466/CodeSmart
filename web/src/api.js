@@ -21,6 +21,26 @@ export async function getDocuments() {
   return res.json()
 }
 
+export async function deleteDocument(filename) {
+  const res = await fetch(`${BASE}/documents/${encodeURIComponent(filename)}`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.detail || '删除失败')
+  }
+  return res.json()
+}
+
+export async function deleteAllDocuments() {
+  const res = await fetch(`${BASE}/documents`, { method: 'DELETE' })
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.detail || '清空失败')
+  }
+  return res.json()
+}
+
 export async function getSessions() {
   const res = await fetch(`${BASE}/sessions`)
   return res.json()

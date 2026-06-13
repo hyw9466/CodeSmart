@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
-import { getDocuments } from '../api.js'
+import { getDocuments, deleteDocument, deleteAllDocuments } from '../api.js'
 import FileUpload from './FileUpload.vue'
 
 const props = defineProps({
@@ -13,6 +13,7 @@ const documents = ref([])
 const showDocs = ref(false)
 const docsPanel = ref(null)
 const panelHeight = ref(0)
+const deleting = ref(false)
 
 async function refreshDocs() {
   try {
@@ -21,15 +22,40 @@ async function refreshDocs() {
   } catch {}
 }
 
+async function handleDelete(filename) {
+  if (!confirm(`确定要删除文档 "${filename}" 吗？`)) return
+  deleting.value = true
+  try {
+    await deleteDocument(filename)
+    await refreshDocs()
+  } catch (err) {
+    alert('删除失败: ' + err.message)
+  } finally {
+    deleting.value = false
+  }
+}
+
+async function handleClearAll() {
+  if (!confirm('确定要清空整个知识库吗？此操作不可恢复！')) return
+  if (!confirm('再次确认：删除所有文档？')) return
+  deleting.value = true
+  try {
+    await deleteAllDocuments()
+    await refreshDocs()
+  } catch (err) {
+    alert('清空失败: ' + err.message)
+  } finally {
+    deleting.value = false
+  }
+}
+
 async function toggleDocs() {
   if (!showDocs.value) {
-    // 展开：先渲染内容获取高度，再动画展开
     showDocs.value = true
     refreshDocs()
     await nextTick()
     panelHeight.value = docsPanel.value?.scrollHeight || 0
   } else {
-    // 收起：先设高度为当前值，再动画到 0
     panelHeight.value = 0
     setTimeout(() => { showDocs.value = false }, 300)
   }
@@ -99,13 +125,37 @@ onMounted(refreshDocs)
         :style="{ maxHeight: panelHeight + 'px' }"
       >
         <div class="mt-2 space-y-2">
+          <!-- 文档列表 -->
           <div
             v-for="doc in documents"
             :key="doc.filename"
-            class="text-xs text-gray-500 px-2 py-1 bg-gray-800 rounded truncate"
+            class="flex items-center gap-1 text-xs bg-gray-800 rounded px-2 py-1 group"
           >
-            {{ doc.filename }}
+            <span class="flex-1 truncate text-gray-400">{{ doc.filename }}</span>
+            <button
+              class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300
+                     text-xs px-1 transition-opacity"
+              :disabled="deleting"
+              @click="handleDelete(doc.filename)"
+              title="删除此文档"
+            >
+              🗑️
+            </button>
           </div>
+
+          <!-- 清空全部按钮 -->
+          <button
+            v-if="documents.length > 0"
+            class="w-full text-xs text-red-400 hover:text-red-300 py-1
+                   border border-red-400/30 hover:border-red-300 rounded
+                   transition-colors mt-2"
+            :disabled="deleting"
+            @click="handleClearAll"
+          >
+            🗑️ 清空知识库
+          </button>
+
+          <!-- 上传组件 -->
           <FileUpload @uploaded="refreshDocs" />
         </div>
       </div>
