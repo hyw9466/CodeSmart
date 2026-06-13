@@ -2,12 +2,11 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# 使用阿里云镜像加速 apt（直接写入完整配置）
+# 使用阿里云镜像加速 apt（跳过签名验证，避免密钥问题）
 RUN echo "deb https://mirrors.aliyun.com/debian/ bookworm main contrib non-free non-free-firmware" > /etc/apt/sources.list \
-    && echo "deb-src https://mirrors.aliyun.com/debian/ bookworm main contrib non-free non-free-firmware" >> /etc/apt/sources.list \
     && echo "deb https://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free non-free-firmware" >> /etc/apt/sources.list \
     && echo "deb https://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free non-free-firmware" >> /etc/apt/sources.list \
-    && apt-get update && apt-get install -y \
+    && apt-get update --allow-unauthenticated && apt-get install -y \
     build-essential \
     curl \
     git \
