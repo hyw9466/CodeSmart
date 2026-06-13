@@ -18,7 +18,6 @@ class UploadResponse(BaseModel):
     char_count: int
     status: str  # "success" | "warning" | "error"
     message: str
-    session_id: str = "default"
 
 
 class SummaryRequest(BaseModel):

@@ -11,7 +11,7 @@ import os
 from typing import AsyncIterator
 
 from langchain_community.chat_message_histories import FileChatMessageHistory
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langgraph.prebuilt import create_react_agent
 
 from models.llm import get_llm
@@ -276,3 +276,24 @@ def list_sessions() -> list:
                 break
         sessions.append({"id": session_id, "title": title})
     return sessions
+
+
+def add_document_to_session(filename: str, content: str, session_id: str = "default") -> None:
+    """将文档内容添加到指定会话的历史记录中。"""
+    history = _get_history(session_id)
+    doc_message = SystemMessage(content=f"用户上传了文档: {filename}\n\n文档内容:\n{content}")
+    history.add_message(doc_message)
+
+
+def get_session_history(session_id: str) -> list:
+    """获取指定会话的完整历史消息（供 API 返回给前端）。"""
+    history = _get_history(session_id)
+    messages = []
+    for msg in history.messages:
+        if isinstance(msg, HumanMessage):
+            messages.append({"role": "user", "content": msg.content})
+        elif isinstance(msg, AIMessage):
+            messages.append({"role": "assistant", "content": msg.content})
+        elif isinstance(msg, SystemMessage):
+            messages.append({"role": "system", "content": msg.content})
+    return messages

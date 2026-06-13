@@ -9,10 +9,9 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 
 import config
-from models.embedding import create_embedding
+from models.embedding import instance as _embedding
 
 # 模块级单例
-_embedding = create_embedding()
 _store: Optional[FAISS] = None
 
 

@@ -15,7 +15,7 @@ from vectorstore.registry import compute_hash, is_duplicate, register_file, list
 from chains.rag_chain import build_rag_chain, stream_rag_chain
 from chains.summary_chain import summarize_text, stream_summarize
 from chains.code_completion_chain import generate_completions
-from agent.agent import run_agent, stream_agent, get_session_history, list_sessions, add_document_to_session
+from agent.agent import run_agent, stream_agent, get_session_history, list_sessions
 
 router = APIRouter()
 
@@ -40,8 +40,8 @@ async def ping():
 
 
 @router.post("/upload", response_model=UploadResponse)
-async def upload_document(file: UploadFile = File(...), session_id: str = "default"):
-    """上传文档，将内容保存到当前会话中。支持 .md / .txt / .pdf / .docx"""
+async def upload_document(file: UploadFile = File(...)):
+    """上传文档，解析分块后存入向量库（知识库模式）。支持 .md / .txt / .pdf / .docx"""
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in SUPPORTED_EXTENSIONS:
         raise HTTPException(
@@ -50,12 +50,17 @@ async def upload_document(file: UploadFile = File(...), session_id: str = "defau
 
     content = await file.read()
 
-    # 保存文件到临时目录（供后续可能的摘要等操作使用）
+    # 检查重复：同名且同内容 hash 则跳过
+    content_hash = compute_hash(content)
+    if is_duplicate(file.filename, content_hash):
+        raise HTTPException(409, f"文件 {file.filename} 已存在且内容未变化，无需重复上传")
+
+    # 保存文件到上传目录
     save_path = os.path.join(config.UPLOAD_DIR, file.filename)
     with open(save_path, "wb") as f:
         f.write(content)
 
-    # 验证文档内容
+    # 验证并加载文档内容
     text, is_valid, validate_msg = validate_and_load(save_path)
     if not is_valid:
         return UploadResponse(
@@ -64,22 +69,23 @@ async def upload_document(file: UploadFile = File(...), session_id: str = "defau
             char_count=0,
             status="error",
             message=validate_msg,
-            session_id=session_id,
         )
 
-    # 将文档内容添加到会话历史中（不保存到向量库）
-    add_document_to_session(file.filename, text, session_id)
-
-    # 计算分块数（仅用于展示，不实际入库）
+    # 切分文档
     docs = split_documents(text, file.filename)
+
+    # 异步并发入库（存入 FAISS 向量库）
+    count = await async_add_documents(docs)
+
+    # 注册文件（去重用）
+    register_file(file.filename, content_hash)
 
     return UploadResponse(
         filename=file.filename,
-        chunks=len(docs),
+        chunks=count,
         char_count=len(text.strip()),
         status="success",
-        message=f"成功将文档内容添加到会话中，共 {len(text.strip())} 个字符，{len(docs)} 个片段",
-        session_id=session_id,
+        message=f"成功处理 {count} 个片段，共 {len(text.strip())} 个字符",
     )
 
 
