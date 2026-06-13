@@ -21,7 +21,7 @@
 - 前端：Vue 3 + Vite + Tailwind CSS
 - 后端：Python + FastAPI + LangChain
 - LLM：阿里云百炼 qwen3.6-plus（DashScope API）
-- Embedding：Jina AI jina-embeddings-v3
+- Embedding：阿里云 DashScope tongyi-embedding-vision-flash
 - 向量数据库：FAISS（本地持久化）
 - Agent 框架：LangGraph ReAct Agent
 
@@ -53,7 +53,7 @@ CodeSmart/
 ├── knowledge_base/            # 预置知识库（6 个维度）
 ├── models/                    # 模型封装
 │   ├── llm.py                # LLM（DashScope OpenAI 兼容）
-│   └── embedding.py          # Embedding（Jina AI，同步+异步并发）
+│   └── embedding.py          # Embedding（阿里云 DashScope，同步+异步并发）
 └── web/                       # Vue 3 前端
 ```
 
@@ -144,9 +144,9 @@ docker logs code-analysis-assistant -f
 ### 环境变量（.env）
 
 ```env
-# Embedding 模型（Jina AI）
-JINA_API_KEY=your-jina-api-key
-EMBEDDING_MODEL=jina-embeddings-v3
+# Embedding 模型（阿里云 DashScope）
+EMBEDDING_MODEL=tongyi-embedding-vision-flash-2026-03-06
+DASHSCOPE_API_KEY=your-dashscope-api-key
 
 # LLM 模型（阿里云百炼）
 DASHSCOPE_API_KEY=your-dashscope-api-key

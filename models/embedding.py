@@ -2,7 +2,7 @@
 
 依赖环境变量：
 - DASHSCOPE_API_KEY: 阿里云 DashScope 的 API Key
-- EMBEDDING_MODEL: 模型名称（默认 tongyi-embedding-vision-flash-2026-03-06）
+- EMBEDDING_MODEL: 模型名称（默认 text-embedding-v4）
 - EMBEDDING_CONCURRENCY: 并发数（默认 3）
 """
 
@@ -28,8 +28,7 @@ class DashScopeEmbedding(Embeddings):
     异步方式受 EMBEDDING_CONCURRENCY 控制并发数。
     
     支持的模型包括：
-    - tongyi-embedding-vision-flash-2026-03-06（多模态，支持文本/图像/视频）
-    - text-embedding-v4（文本专用）
+    - text-embedding-v4（文本专用，推荐）
     """
 
     def __init__(

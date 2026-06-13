@@ -6,12 +6,15 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# 获取 config.py 所在目录（即项目根目录）
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# 加载 .env 文件
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 # ═══════════════════════════════════════════════════════════
 # Embedding 模型配置（阿里云 DashScope）
 # ═══════════════════════════════════════════════════════════
-EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "tongyi-embedding-vision-flash-2026-03-06")
+EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-v4")
 DASHSCOPE_API_KEY: str = os.getenv("DASHSCOPE_API_KEY", "")
 EMBEDDING_CONCURRENCY: int = int(os.getenv("EMBEDDING_CONCURRENCY", "3"))
 

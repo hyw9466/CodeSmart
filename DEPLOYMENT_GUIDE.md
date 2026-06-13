@@ -36,9 +36,9 @@ nano .env
 配置内容说明：
 
 ```env
-# Jina AI 嵌入模型（文档向量化用）
-JINA_API_KEY=your-jina-api-key-here
-EMBEDDING_MODEL=jina-embeddings-v3
+# 阿里云 DashScope 嵌入模型（文档向量化用）
+EMBEDDING_MODEL=tongyi-embedding-vision-flash-2026-03-06
+DASHSCOPE_API_KEY=your-dashscope-api-key-here
 
 # 阿里云 DashScope（LLM 问答用）
 DASHSCOPE_API_KEY=your-dashscope-api-key-here
