@@ -124,7 +124,7 @@ async def delete_all_documents():
 
     deleted_count = 0
     for doc in docs:
-        delete_documents_by_source(doc["filename"])
+        await delete_documents_by_source(doc["filename"])
         unregister_file(doc["filename"])
         deleted_count += 1
 

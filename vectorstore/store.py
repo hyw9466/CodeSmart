@@ -82,7 +82,7 @@ def has_index() -> bool:
     return _get_store() is not None
 
 
-def delete_documents_by_source(source_filename: str) -> int:
+async def delete_documents_by_source(source_filename: str) -> int:
     """根据源文件名删除向量库中的相关文档片段。
 
     注意：FAISS 不支持单个向量删除，采用重建索引方式。
@@ -110,10 +110,9 @@ def delete_documents_by_source(source_filename: str) -> int:
 
     # 重建索引
     if docs_to_keep:
-        # 重新生成 embedding
-        import asyncio
+        # 重新生成 embedding（异步）
         texts = [doc.page_content for doc in docs_to_keep]
-        embeddings = asyncio.run(_embedding.aembed_documents(texts))
+        embeddings = await _embedding.aembed_documents(texts)
         text_embedding_pairs = list(zip(texts, embeddings))
         metadatas = [doc.metadata for doc in docs_to_keep]
         _store = FAISS.from_embeddings(
