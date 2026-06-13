@@ -48,11 +48,59 @@ def _load_pdf(file_path: str) -> str:
 
 
 def _load_docx(file_path: str) -> str:
-    """使用 python-docx 提取 Word 文档文本。"""
+    """使用 python-docx 提取 Word 文档文本（含段落、表格、页眉页脚）。"""
     from docx import Document as DocxDocument
 
     doc = DocxDocument(file_path)
-    return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+    text_parts = []
+
+    # 1. 提取段落文本
+    for para in doc.paragraphs:
+        if para.text.strip():
+            text_parts.append(para.text.strip())
+
+    # 2. 提取表格文本（支持嵌套表格）
+    def extract_table_text(table, depth=0):
+        """递归提取表格中所有单元格的文本。"""
+        lines = []
+        indent = "  " * depth  # 嵌套层级缩进，保持结构感
+        for row in table.rows:
+            row_texts = []
+            for cell in row.cells:
+                # 递归处理嵌套表格
+                cell_text = ""
+                for para in cell.paragraphs:
+                    if para.text.strip():
+                        cell_text += para.text.strip() + " "
+                # 检查单元格内是否有嵌套表格
+                nested_tables = cell._element.findall(".//w:tbl", {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"})
+                if nested_tables:
+                    nested_text = extract_table_text(cell.tables[0], depth + 1)
+                    cell_text = nested_text
+                if cell_text.strip():
+                    row_texts.append(cell_text.strip())
+            if row_texts:
+                lines.append(indent + " | ".join(row_texts))
+        return "\n".join(lines)
+
+    for table in doc.tables:
+        table_text = extract_table_text(table)
+        if table_text:
+            text_parts.append(f"[表格]\n{table_text}\n[/表格]")
+
+    # 3. 提取页眉页脚（如果需要）
+    for section in doc.sections:
+        header = section.header
+        for para in header.paragraphs:
+            if para.text.strip():
+                text_parts.append(f"[页眉] {para.text.strip()}")
+
+        footer = section.footer
+        for para in footer.paragraphs:
+            if para.text.strip():
+                text_parts.append(f"[页脚] {para.text.strip()}")
+
+    return "\n".join(text_parts)
 
 
 def validate_and_load(file_path: str) -> Tuple[str, bool, str]:
