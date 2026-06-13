@@ -101,13 +101,14 @@ async def get_documents():
 @router.delete("/documents/{filename}")
 async def delete_document(filename: str):
     """删除指定文档（从注册表和向量库中同时移除）。"""
-    # 1. 从注册表删除
-    unregistered = unregister_file(filename)
-    if not unregistered:
+    # 1. 先从向量库删除（可能失败）
+    deleted_count = await delete_documents_by_source(filename)
+    if deleted_count == 0 and not unregister_file(filename):
+        # 文件不在注册表中，说明本来就不存在
         raise HTTPException(404, f"文档 '{filename}' 不在知识库中")
 
-    # 2. 从向量库删除相关片段
-    deleted_count = delete_documents_by_source(filename)
+    # 2. 确认向量库删除成功后，再从注册表移除
+    unregister_file(filename)
 
     return {
         "message": f"成功删除文档 '{filename}'",
@@ -123,10 +124,22 @@ async def delete_all_documents():
         return {"message": "知识库已经是空的"}
 
     deleted_count = 0
+    failed_files = []
     for doc in docs:
-        await delete_documents_by_source(doc["filename"])
-        unregister_file(doc["filename"])
-        deleted_count += 1
+        filename = doc["filename"]
+        try:
+            count = await delete_documents_by_source(filename)
+            # 只有向量库删除成功（或本来就不在向量库里）才从注册表移除
+            unregister_file(filename)
+            deleted_count += 1
+        except Exception as e:
+            failed_files.append(filename)
+
+    if failed_files:
+        return {
+            "message": f"部分删除失败: {', '.join(failed_files)}",
+            "deleted_count": deleted_count,
+        }
 
     return {
         "message": f"已清空知识库，共删除 {deleted_count} 个文档",
