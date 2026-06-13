@@ -143,5 +143,4 @@ npm run dev
 修改 `persona` 字段可自定义专家人设，修改 `knowledge_files` 可调整预置知识库。换领域（如法律、医疗）只需修改此文件和对应的知识库文档，代码无需改动。
 
 ## License
-
 MIT

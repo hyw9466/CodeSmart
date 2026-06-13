@@ -3,8 +3,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# 嵌入模型配置
-EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "jina-embeddings-v3")
+# 嵌入模型提供商：jina | dashscope | openai
+EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "dashscope")
+EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-v3")
+EMBEDDING_API_KEY: str = os.getenv("EMBEDDING_API_KEY", "")
+EMBEDDING_BASE_URL: str = os.getenv("EMBEDDING_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+
+# 兼容旧配置（jina 专用）
 JINA_API_KEY: str = os.getenv("JINA_API_KEY", "")
 
 # 聊天模型配置（阿里云 DashScope）

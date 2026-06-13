@@ -9,12 +9,24 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-tongyi-embedding-vision-plus}
-      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
+      # 嵌入模型配置（默认使用 DashScope，国内直连无需代理）
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-dashscope}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-v3}
+      - EMBEDDING_API_KEY=${EMBEDDING_API_KEY}
+      - EMBEDDING_BASE_URL=${EMBEDDING_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+      # 兼容旧版 Jina 配置
+      - JINA_API_KEY=${JINA_API_KEY}
+      # 聊天模型配置
       - LLM_MODEL=${LLM_MODEL:-qwen3.6-plus}
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
       - LLM_BASE_URL=${LLM_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
     volumes:
-      - ./data:/app/data
+      # 持久化向量索引
+      - ./data/vectorstore:/app/vectorstore
+      # 持久化上传文件
+      - ./data/uploads:/app/uploads
+      # 持久化对话历史
+      - ./data/chat_history:/app/chat_history
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
