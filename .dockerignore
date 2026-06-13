@@ -6,7 +6,6 @@ __pycache__/
 *.pyc
 .env
 web/node_modules/
-web/dist/
 vectorstore/faiss_index/
 uploads/
 chat_history/
