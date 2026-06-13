@@ -9,10 +9,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ═══════════════════════════════════════════════════════════
-# Embedding 模型配置（Jina AI）
+# Embedding 模型配置（阿里云 DashScope）
 # ═══════════════════════════════════════════════════════════
-EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "jina-embeddings-v3")
-JINA_API_KEY: str = os.getenv("JINA_API_KEY", "")
+EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "tongyi-embedding-vision-flash-2026-03-06")
+DASHSCOPE_API_KEY: str = os.getenv("DASHSCOPE_API_KEY", "")
 EMBEDDING_CONCURRENCY: int = int(os.getenv("EMBEDDING_CONCURRENCY", "3"))
 
 # ═══════════════════════════════════════════════════════════

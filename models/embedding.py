@@ -1,8 +1,8 @@
-"""Jina AI Embedding 封装：同步 + 异步并发调用。
+"""阿里云 DashScope Embedding 封装：同步 + 异步并发调用。
 
 依赖环境变量：
-- JINA_API_KEY: Jina AI 的 API Key
-- EMBEDDING_MODEL: 模型名称（默认 jina-embeddings-v3）
+- DASHSCOPE_API_KEY: 阿里云 DashScope 的 API Key
+- EMBEDDING_MODEL: 模型名称（默认 tongyi-embedding-vision-flash-2026-03-06）
 - EMBEDDING_CONCURRENCY: 并发数（默认 3）
 """
 
@@ -21,11 +21,15 @@ import config
 _executor = ThreadPoolExecutor(max_workers=config.EMBEDDING_CONCURRENCY)
 
 
-class JinaEmbedding(Embeddings):
-    """通过 Jina AI API 调用 Embedding 模型。
+class DashScopeEmbedding(Embeddings):
+    """通过阿里云 DashScope API 调用 Embedding 模型。
 
     支持同步（embed_documents / embed_query）和异步（aembed_documents / aembed_query）两种调用方式。
     异步方式受 EMBEDDING_CONCURRENCY 控制并发数。
+    
+    支持的模型包括：
+    - tongyi-embedding-vision-flash-2026-03-06（多模态，支持文本/图像/视频）
+    - text-embedding-v4（文本专用）
     """
 
     def __init__(
@@ -33,16 +37,18 @@ class JinaEmbedding(Embeddings):
         model: str | None = None,
         api_key: str | None = None,
         timeout: int = 60,
+        base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1",
         **kwargs,
     ):
         super().__init__(**kwargs)
         self._model = model or config.EMBEDDING_MODEL
-        self._api_key = api_key or config.JINA_API_KEY
+        self._api_key = api_key or config.DASHSCOPE_API_KEY
         self._timeout = timeout
+        self._base_url = base_url
 
         if not self._api_key:
             raise ValueError(
-                "JINA_API_KEY 未配置，请设置环境变量或在 .env 文件中配置"
+                "DASHSCOPE_API_KEY 未配置，请设置环境变量或在 .env 文件中配置"
             )
 
     @property
@@ -50,7 +56,7 @@ class JinaEmbedding(Embeddings):
         return self._model
 
     def _embed_one(self, text: str) -> List[float]:
-        """调用 Jina Embedding API 生成单条文本的向量。"""
+        """调用 DashScope Embedding API 生成单条文本的向量。"""
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self._api_key}",
@@ -59,7 +65,7 @@ class JinaEmbedding(Embeddings):
 
         try:
             resp = requests.post(
-                "https://api.jina.ai/v1/embeddings",
+                f"{self._base_url}/embeddings",
                 json=payload,
                 headers=headers,
                 timeout=self._timeout,
@@ -67,12 +73,12 @@ class JinaEmbedding(Embeddings):
         except requests.exceptions.Timeout:
             raise RuntimeError(
                 f"Embedding API 连接超时（{self._timeout}秒），"
-                "请检查网络连接或尝试配置代理"
+                "请检查网络连接"
             )
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.ConnectionError as e:
             raise RuntimeError(
-                "无法连接到 Jina Embedding API（api.jina.ai），"
-                "请确保网络可以访问 Jina AI 服务"
+                f"无法连接到 DashScope Embedding API：{str(e)}\n"
+                "请确保网络可以访问阿里云 DashScope 服务"
             )
         except Exception as e:
             raise RuntimeError(f"Embedding 调用异常: {str(e)}")
@@ -116,4 +122,4 @@ class JinaEmbedding(Embeddings):
 
 
 # 模块级单例，供 vectorstore 等模块直接引用
-instance = JinaEmbedding()
+instance = DashScopeEmbedding()
