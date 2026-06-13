@@ -13,7 +13,7 @@ ssh root@139.224.163.81
 
 ```bash
 # 进入项目目录
-cd /opt/app
+cd /root/CodeSmart
 
 # 如果是首次部署，克隆仓库
 git clone https://github.com/hyw9466/CodeSmart.git

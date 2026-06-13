@@ -18,8 +18,8 @@ services:
       # Agent 配置
       - MEMORY_WINDOW_K=${MEMORY_WINDOW_K:-3}
     volumes:
-      # 持久化向量索引（FAISS）
-      - ./data/vectorstore:/app/vectorstore
+      # 持久化向量索引（FAISS）- 仅挂载索引目录，避免覆盖 Python 模块
+      - ./data/vectorstore:/app/vectorstore/faiss_index
       # 持久化上传文件
       - ./data/uploads:/app/uploads
       # 持久化对话历史
