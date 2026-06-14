@@ -16,6 +16,26 @@
 - **专家配置**：通过 YAML 配置文件定义专家人设，换领域只需改配置
 - **异步并发 Embedding**：并发调用 Embedding API，上传大文档时显著加速
 
+## 项目亮点
+
+**1. 混合路由架构：规则匹配 + Agent 自动决策**
+
+不是所有问题都值得调用 LLM。项目在 Agent 之前插入一层规则匹配，对问候、致谢、时间查询等高频简单对话直接返回预设响应（< 10ms），避免为"你好"花费一次 API 调用。识别不了的请求再交给 LangGraph ReAct Agent 做工具调用决策。这种两级路由在保持智能化的同时，有效控制 API 成本和响应延迟。
+
+**2. 三层记忆体系：短期上下文 + 智能压缩 + 长期向量记忆**
+
+- **短期记忆**：基于 `FileChatMessageHistory` 持久化，按 session 隔离，重启不丢失
+- **上下文压缩**：对历史消息做多因子评分（语义相关性 60% + 位置权重 30% + 消息类型 10%），结合动态窗口算法，在不超过 Token 预算的前提下保留最有价值的上下文
+- **长期记忆**：通过 FAISS 向量库存储用户偏好和关键知识点，跨会话检索复用。会话结束时自动触发 LLM 摘要，提取偏好和待办事项存入长期记忆
+
+**3. 解耦的专家系统：换领域只需改配置**
+
+专家人设通过 `expert_profile.yaml` 定义，预置知识库从 `knowledge_base/` 目录自动加载到向量库，Agent 的 system prompt 由配置动态拼装。不关心代码审查的场景下，替换 YAML 和知识库文档，同一套代码即可切换为法律顾问、技术支持等角色——LLM、RAG、Agent 三条链都没有领域耦合。
+
+**4. 文档去重与并发 Embedding**
+
+上传文档时基于内容 SHA256 哈希检测重复，避免同一文档被重复向量化。Embedding 调用使用 `asyncio.Semaphore` 控制并发（默认 3），大文档分块后并发处理，相比串行提速约 2-3 倍，同时通过信号量避免触发 API 限流。
+
 ## 技术栈
 
 - 前端：Vue 3 + Vite + Tailwind CSS
@@ -37,8 +57,11 @@ CodeSmart/
 ├── docker-compose.yml         # Docker 部署配置
 ├── Dockerfile                # Docker 镜像构建
 ├── agent/                     # Agent 核心
-│   ├── agent.py               # Agent 逻辑 + 对话记忆管理
-│   └── tools.py              # Tool 定义（文档问答、文档总结）
+│   ├── agent.py               # Agent 路由 + 对话记忆 + 简单对话快速响应
+│   ├── tools.py               # Tool 定义（文档问答、文档总结等）
+│   ├── context_compressor.py  # 智能上下文压缩（多因子评分 + 动态窗口）
+│   ├── long_term_memory.py    # 长期记忆（FAISS 向量存储 + 过期清理）
+│   └── session_summarizer.py  # 会话自动总结（LLM 摘要 + 偏好提取）
 ├── api/                       # API 接口层
 │   ├── routes.py             # 全部路由（REST + SSE 流式）
 │   └── schemas.py             # 请求/响应模型
@@ -138,6 +161,11 @@ docker logs code-analysis-assistant -f
 | `/api/agent/chat/stream` | POST | Agent 智能对话（流式 SSE） |
 | `/api/summary` | POST | 文档总结 |
 | `/api/summary/stream` | POST | 文档总结（流式 SSE） |
+| `/api/memory/stats` | GET | 用户记忆统计 |
+| `/api/memory/retrieve` | GET | 检索相关记忆 |
+| `/api/memory/add` | POST | 手动添加记忆 |
+| `/api/memory/{memory_id}` | DELETE | 删除指定记忆 |
+| `/api/sessions/{id}/summary` | GET | 获取会话总结 |
 
 ## 配置说明
 
@@ -154,7 +182,10 @@ LLM_MODEL=qwen3.6-plus
 
 # 可选配置
 EMBEDDING_CONCURRENCY=3
-MEMORY_WINDOW_K=3
+MEMORY_WINDOW_K=3        # 短期记忆窗口（轮数）
+MEMORY_EXPIRE_DAYS=30     # 长期记忆过期天数
+MEMORY_RETRIEVE_K=3       # 检索返回记忆数量
+MEMORY_SUMMARY_THRESHOLD=5 # 触发会话总结的消息数
 ```
 
 ### 专家配置（expert_profile.yaml）
