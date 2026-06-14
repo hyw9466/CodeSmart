@@ -173,8 +173,7 @@ docker logs code-analysis-assistant -f
 
 ```env
 # Embedding 模型（阿里云 DashScope）
-EMBEDDING_MODEL=tongyi-embedding-vision-flash-2026-03-06
-DASHSCOPE_API_KEY=your-dashscope-api-key
+EMBEDDING_MODEL=text-embedding-v4
 
 # LLM 模型（阿里云百炼）
 DASHSCOPE_API_KEY=your-dashscope-api-key

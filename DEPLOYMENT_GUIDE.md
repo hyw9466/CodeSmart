@@ -37,8 +37,7 @@ nano .env
 
 ```env
 # 阿里云 DashScope 嵌入模型（文档向量化用）
-EMBEDDING_MODEL=tongyi-embedding-vision-flash-2026-03-06
-DASHSCOPE_API_KEY=your-dashscope-api-key-here
+EMBEDDING_MODEL=text-embedding-v4
 
 # 阿里云 DashScope（LLM 问答用）
 DASHSCOPE_API_KEY=your-dashscope-api-key-here
