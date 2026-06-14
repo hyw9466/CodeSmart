@@ -1,5 +1,24 @@
 const BASE = '/api'
 
+// 用户ID管理：从 localStorage 获取或创建
+function getUserId() {
+  let userId = localStorage.getItem('user_id')
+  if (!userId) {
+    // 生成唯一用户ID
+    userId = 'user_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36)
+    localStorage.setItem('user_id', userId)
+  }
+  return userId
+}
+
+// 带用户ID的请求头
+function getHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'X-User-ID': getUserId()
+  }
+}
+
 export async function checkHealth() {
   const res = await fetch('/health')
   return res.json()
@@ -8,7 +27,11 @@ export async function checkHealth() {
 export async function uploadFile(file) {
   const form = new FormData()
   form.append('file', file)
-  const res = await fetch(`${BASE}/upload`, { method: 'POST', body: form })
+  const res = await fetch(`${BASE}/upload`, {
+    method: 'POST',
+    body: form,
+    headers: { 'X-User-ID': getUserId() }
+  })
   if (!res.ok) {
     const err = await res.json()
     throw new Error(err.detail || '上传失败')
@@ -17,13 +40,16 @@ export async function uploadFile(file) {
 }
 
 export async function getDocuments() {
-  const res = await fetch(`${BASE}/documents`)
+  const res = await fetch(`${BASE}/documents`, {
+    headers: { 'X-User-ID': getUserId() }
+  })
   return res.json()
 }
 
 export async function deleteDocument(filename) {
   const res = await fetch(`${BASE}/documents/${encodeURIComponent(filename)}`, {
     method: 'DELETE',
+    headers: { 'X-User-ID': getUserId() }
   })
   if (!res.ok) {
     const err = await res.json()
@@ -33,7 +59,10 @@ export async function deleteDocument(filename) {
 }
 
 export async function deleteAllDocuments() {
-  const res = await fetch(`${BASE}/documents`, { method: 'DELETE' })
+  const res = await fetch(`${BASE}/documents`, {
+    method: 'DELETE',
+    headers: { 'X-User-ID': getUserId() }
+  })
   if (!res.ok) {
     const err = await res.json()
     throw new Error(err.detail || '清空失败')
@@ -42,12 +71,16 @@ export async function deleteAllDocuments() {
 }
 
 export async function getSessions() {
-  const res = await fetch(`${BASE}/sessions`)
+  const res = await fetch(`${BASE}/sessions`, {
+    headers: { 'X-User-ID': getUserId() }
+  })
   return res.json()
 }
 
 export async function getSessionMessages(sessionId) {
-  const res = await fetch(`${BASE}/sessions/${sessionId}/messages`)
+  const res = await fetch(`${BASE}/sessions/${sessionId}/messages`, {
+    headers: { 'X-User-ID': getUserId() }
+  })
   return res.json()
 }
 
@@ -61,8 +94,8 @@ export async function getSessionMessages(sessionId) {
 export async function streamChat(query, sessionId, onEvent, onDone) {
   const res = await fetch(`${BASE}/agent/chat/stream`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, session_id: sessionId }),
+    headers: getHeaders(),
+    body: JSON.stringify({ query, session_id: sessionId, user_id: getUserId() }),
   })
 
   const reader = res.body.getReader()
@@ -101,7 +134,7 @@ export async function streamChat(query, sessionId, onEvent, onDone) {
 export async function getCodeCompletion(code, language, line, column) {
   const res = await fetch(`${BASE}/code/completion`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders(),
     body: JSON.stringify({ code, language, line, column }),
   })
   if (!res.ok) {
@@ -110,3 +143,6 @@ export async function getCodeCompletion(code, language, line, column) {
   }
   return res.json()
 }
+
+// 导出获取用户ID的函数（供其他组件使用）
+export { getUserId }
