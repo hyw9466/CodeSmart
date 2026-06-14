@@ -11,7 +11,7 @@ from expert.profile import load_profile
 
 
 async def load_knowledge_base() -> dict:
-    """加载专家配置中指定的知识库文件到向量库。
+    """加载专家配置中指定的知识库文件到基础知识库（所有用户共享）。
 
     已入库的文件（内容未变）会自动跳过，支持增量更新。
     返回加载统计信息。
@@ -33,14 +33,17 @@ async def load_knowledge_base() -> dict:
         with open(path, "rb") as f:
             content_hash = compute_hash(f.read())
 
-        if is_duplicate(kb_filename, content_hash):
+        # 检查基础知识库（user_id=None）
+        if is_duplicate(kb_filename, content_hash, user_id=None):
             skipped.append({"file": filename, "reason": "已入库且未变化"})
             continue
 
         text = load_file(path)
         docs = split_documents(text, kb_filename)
-        count = await async_add_documents(docs)
-        register_file(kb_filename, content_hash)
+        # 加载到基础知识库（user_id=None）
+        count = await async_add_documents(docs, user_id=None)
+        # 注册到基础知识库
+        register_file(kb_filename, content_hash, user_id=None)
         loaded.append({"file": filename, "chunks": count})
 
     return {

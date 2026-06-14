@@ -5,6 +5,7 @@ from typing import Optional
 class ChatRequest(BaseModel):
     query: str
     session_id: str = "default"
+    user_id: Optional[str] = None  # 用户ID，用于多租户隔离
 
 
 class ChatResponse(BaseModel):
@@ -22,6 +23,7 @@ class UploadResponse(BaseModel):
 
 class SummaryRequest(BaseModel):
     filename: str
+    user_id: Optional[str] = None  # 用户ID
 
 
 class SummaryResponse(BaseModel):

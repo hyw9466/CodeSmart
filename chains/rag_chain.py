@@ -1,6 +1,7 @@
 """RAG 问答链：检索相关文档 + LLM 生成带来源引用的回答。"""
 
 from __future__ import annotations
+from typing import Optional
 
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -39,9 +40,14 @@ def _format_docs(docs) -> str:
     return "\n\n---\n\n".join(parts)
 
 
-def build_rag_chain(k: int = 4):
-    """构建 RAG 问答链。"""
-    retriever = get_retriever(k=k)
+def build_rag_chain(k: int = 4, user_id: Optional[str] = None):
+    """构建 RAG 问答链。
+    
+    Args:
+        k: 检索文档数量
+        user_id: 用户ID，用于合并用户知识库
+    """
+    retriever = get_retriever(k=k, user_id=user_id)
     llm = get_llm(temperature=0.3)
 
     chain = (
@@ -53,8 +59,14 @@ def build_rag_chain(k: int = 4):
     return chain
 
 
-async def stream_rag_chain(query: str, k: int = 4):
-    """流式 RAG 问答，逐 token 产出。"""
-    chain = build_rag_chain(k=k)
+async def stream_rag_chain(query: str, k: int = 4, user_id: Optional[str] = None):
+    """流式 RAG 问答，逐 token 产出。
+    
+    Args:
+        query: 用户查询
+        k: 检索文档数量
+        user_id: 用户ID，用于合并用户知识库
+    """
+    chain = build_rag_chain(k=k, user_id=user_id)
     async for chunk in chain.astream(query):
         yield chunk

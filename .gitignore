@@ -5,6 +5,7 @@ __pycache__/
 vectorstore/faiss_index/
 uploads/
 chat_history/
+data/
 .idea/
 .vscode/
 web/node_modules/

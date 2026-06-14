@@ -30,7 +30,13 @@ async def health_check():
 # 启动时确保必要目录存在
 @app.on_event("startup")
 async def startup():
+    # 创建基础知识库目录
     os.makedirs(config.FAISS_INDEX_DIR, exist_ok=True)
+    
+    # 创建用户数据根目录
+    os.makedirs(config.USERS_DIR, exist_ok=True)
+    
+    # 兼容旧版本的目录
     os.makedirs(config.UPLOAD_DIR, exist_ok=True)
     os.makedirs(config.CHAT_HISTORY_DIR, exist_ok=True)
 
