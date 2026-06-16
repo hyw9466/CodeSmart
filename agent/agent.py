@@ -437,61 +437,65 @@ async def stream_agent(
             return
     
     # 正常路径：使用 ReAct Agent
-    agent = _build_agent(user_id)
-    history = _get_history(session_id, user_id)
-    
-    # 使用智能压缩获取上下文
-    recent = _get_compressed_messages(history, query, user_id)
-    messages = recent + [HumanMessage(content=query)]
+    try:
+        agent = _build_agent(user_id)
+        history = _get_history(session_id, user_id)
+        
+        # 使用智能压缩获取上下文
+        recent = _get_compressed_messages(history, query, user_id)
+        messages = recent + [HumanMessage(content=query)]
 
-    full_answer = ""
+        full_answer = ""
 
-    async for event in agent.astream_events(
-        {"messages": messages}, version="v2"
-    ):
-        kind = event.get("event", "")
-        
-        if kind == "on_agent_start":
-            yield {"type": "thinking", "content": "正在分析您的问题..."}
-        
-        elif kind == "on_tool_start":
-            tool_name = event.get("name", "")
-            tool_input = event.get("data", {}).get("input", {})
-            yield {
-                "type": "tool_call",
-                "name": tool_name,
-                "input": tool_input,
-                "content": f"🔧 正在调用工具：{tool_name}"
-            }
-        
-        elif kind == "on_tool_end":
-            tool_name = event.get("name", "")
-            tool_result = event.get("data", {}).get("output", "")
-            yield {
-                "type": "tool_result",
-                "name": tool_name,
-                "content": f"✅ 工具调用完成：{tool_name}"
-            }
-        
-        elif kind == "on_chat_model_stream":
-            chunk = event.get("data", {}).get("chunk")
-            if chunk and hasattr(chunk, "content") and chunk.content:
-                if not getattr(chunk, "tool_calls", None) and not getattr(
-                    chunk, "tool_call_chunks", None
-                ):
-                    full_answer += chunk.content
-                    yield {"type": "token", "content": chunk.content}
+        async for event in agent.astream_events(
+            {"messages": messages}, version="v2"
+        ):
+            kind = event.get("event", "")
+            
+            if kind == "on_agent_start":
+                yield {"type": "thinking", "content": "正在分析您的问题..."}
+            
+            elif kind == "on_tool_start":
+                tool_name = event.get("name", "")
+                tool_input = event.get("data", {}).get("input", {})
+                yield {
+                    "type": "tool_call",
+                    "name": tool_name,
+                    "input": tool_input,
+                    "content": f"🔧 正在调用工具：{tool_name}"
+                }
+            
+            elif kind == "on_tool_end":
+                tool_name = event.get("name", "")
+                tool_result = event.get("data", {}).get("output", "")
+                yield {
+                    "type": "tool_result",
+                    "name": tool_name,
+                    "content": f"✅ 工具调用完成：{tool_name}"
+                }
+            
+            elif kind == "on_chat_model_stream":
+                chunk = event.get("data", {}).get("chunk")
+                if chunk and hasattr(chunk, "content") and chunk.content:
+                    if not getattr(chunk, "tool_calls", None) and not getattr(
+                        chunk, "tool_call_chunks", None
+                    ):
+                        full_answer += chunk.content
+                        yield {"type": "token", "content": chunk.content}
 
-    # 流结束后持久化
-    history.add_user_message(query)
-    history.add_ai_message(full_answer)
-    
-    # 更新长期记忆
-    _update_long_term_memory(query, full_answer, user_id)
-    
-    # 检查是否需要总结会话
-    if _should_summarize_session(session_id, user_id):
-        _summarize_and_store(session_id, user_id)
+        # 流结束后持久化
+        history.add_user_message(query)
+        history.add_ai_message(full_answer)
+        
+        # 更新长期记忆
+        _update_long_term_memory(query, full_answer, user_id)
+        
+        # 检查是否需要总结会话
+        if _should_summarize_session(session_id, user_id):
+            _summarize_and_store(session_id, user_id)
+
+    except Exception as e:
+        yield {"type": "error", "content": f"处理请求时出错：{str(e)}"}
 
 
 def get_session_history(session_id: str, user_id: str = "default") -> list:

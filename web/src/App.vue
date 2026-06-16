@@ -138,6 +138,16 @@ async function sendMessage() {
           aiMsg.loading = true
           aiMsg.content += event.content
           break
+        case 'token':
+          aiMsg.thinking = false
+          aiMsg.loading = true
+          aiMsg.content += event.content
+          break
+        case 'error':
+          aiMsg.thinking = false
+          aiMsg.loading = false
+          aiMsg.content = event.content
+          break
         default:
           // 兼容旧的字符串 token
           if (typeof event === 'string') {
