@@ -297,9 +297,16 @@ async def agent_chat_stream(req: ChatRequest):
     user_id = req.user_id or _get_or_create_user_id()
     
     async def generate():
-        async for token in stream_agent(req.query, req.session_id, user_id=user_id):
-            yield _sse_event(token)
-        yield _sse_done()
+        try:
+            async for token in stream_agent(req.query, req.session_id, user_id=user_id):
+                yield _sse_event(token)
+            yield _sse_done()
+        except Exception as e:
+            yield _sse_event(
+                {"type": "error", "content": f"处理请求时出错：{str(e)}"},
+                event="error"
+            )
+            yield _sse_done()
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 
