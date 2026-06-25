@@ -1,0 +1,50 @@
+name: code_security_analysis
+display_name: 代码安全分析
+version: "1.0.0"
+description: |
+  分析代码中的安全漏洞。当用户需要检查代码安全性、发现潜在安全问题时使用此工具。
+  检测范围：SQL注入、XSS攻击、敏感信息泄露、硬编码密钥、命令注入、路径遍历、认证绕过、CSRF。
+
+trigger:
+  keywords:
+    - 安全性
+    - 安全分析
+    - 安全漏洞
+    - 安全审计
+    - 检查安全
+    - 代码漏洞
+  patterns:
+    - "分析.*安全"
+    - "检查.*漏洞"
+
+parameters:
+  - name: code
+    type: string
+    description: 需要分析的代码文本
+    required: true
+  - name: language
+    type: string
+    description: 代码语言
+    default: "python"
+
+llm:
+  temperature: 0
+
+system_prompt: |
+  你是一位资深的代码安全分析师。请分析以下代码中的安全漏洞。
+  检测范围：SQL注入、XSS攻击、敏感信息泄露、硬编码密钥、命令注入、路径遍历、认证绕过、CSRF。
+  对于每个发现的问题，请给出：
+  1. 问题描述
+  2. 风险等级（🔴高/🟡中/🟢低）
+  3. 风险说明
+  4. 修复建议（含代码示例）
+  语言: {language}
+
+user_prompt: |
+  请分析以下代码的安全性：
+  ```
+  {code}
+  ```
+
+knowledge_base:
+  - security.md

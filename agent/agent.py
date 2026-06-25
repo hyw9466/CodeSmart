@@ -26,39 +26,11 @@ from agent.context_compressor import get_compressor
 from expert.profile import load_profile
 import config
 
-_TOOL_INSTRUCTIONS = """
-
-## 🛠️ 可用工具
-
-| 工具名称 | 使用场景 |
-|---------|---------|
-| document_qa | 当需要查阅知识库或用户上传的文档内容时 |
-| document_summary | 当用户明确要求总结、概括文本内容时 |
-| code_security_analysis | 当用户需要分析代码安全性、检测漏洞时 |
-| code_optimization | 当用户需要优化代码质量、性能或可读性时 |
-| error_log_analysis | 当用户需要分析错误日志、定位问题原因时 |
-
-## 🤔 工具调用决策指南
-
-**✅ 直接回答（不需要工具）**：
-- 简单问候或闲聊（如"你好"、"今天天气"）
-- 一般性知识问答（如"什么是 Python"、"解释什么是 REST API"）
-- 概念解释（如"什么是 SQL 注入"、"什么是异步编程"）
-- 不需要外部知识的问题
-- 简短的技术问题（如"Python 中如何读取文件"）
-
-**🔧 调用工具**：
-- **code_security_analysis**：用户说"分析这段代码的安全性"、"检查漏洞"、"安全审计"
-- **code_optimization**：用户说"优化这段代码"、"改进性能"、"代码重构建议"
-- **document_qa**：用户上传文档后提问"文档中提到了什么"、"根据文档回答..."
-- **document_summary**：用户说"总结这段文本"、"概括内容"
-- **error_log_analysis**：用户粘贴错误日志，说"帮我看看这个错误"、"分析日志"
-
-**💡 思考过程**：
-1. 先理解用户的核心需求
-2. 判断是否需要外部工具获取信息
-3. 如果需要，选择最合适的工具
-4. 如果不确定，尝试直接回答（保守策略）"""
+def _get_tool_instructions() -> str:
+    """从 Skill 插件系统动态生成工具指令。"""
+    from skills.loader import get_skill_loader
+    loader = get_skill_loader()
+    return loader.generate_tool_instructions()
 
 
 def _get_system_prompt(user_id: str = "default") -> str:
@@ -82,7 +54,7 @@ def _get_system_prompt(user_id: str = "default") -> str:
     except Exception:
         memory_text = ""
     
-    return profile.persona + memory_text + _TOOL_INSTRUCTIONS
+    return profile.persona + memory_text + _get_tool_instructions()
 
 
 def _get_history(session_id: str, user_id: str = "default") -> FileChatMessageHistory:

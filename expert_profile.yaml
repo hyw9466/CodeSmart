@@ -28,3 +28,6 @@ knowledge_files:
   - design_patterns.md
   - refactoring.md
   - code_review.md
+
+# Skill 插件目录（skills/ 下的子目录，每个子目录包含 skill.yaml）
+skills_dir: "skills"

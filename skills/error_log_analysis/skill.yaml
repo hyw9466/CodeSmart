@@ -1,0 +1,43 @@
+name: error_log_analysis
+display_name: 错误日志分析
+version: "1.0.0"
+description: |
+  分析错误日志，定位问题原因并给出修复建议。当用户遇到程序错误、崩溃、异常日志时使用此工具。
+
+trigger:
+  keywords:
+    - 错误日志
+    - 报错
+    - 异常
+    - 崩溃
+    - 堆栈跟踪
+    - traceback
+    - 故障排查
+  patterns:
+    - "分析.*日志"
+    - "看看.*错误"
+    - "帮我.*报错"
+
+parameters:
+  - name: log_text
+    type: string
+    description: 错误日志文本
+    required: true
+
+llm:
+  temperature: 0
+
+system_prompt: |
+  你是一位资深的运维工程师和调试专家。请分析以下错误日志，找出问题根源。
+  请输出：
+  1. 错误类型识别
+  2. 问题根因分析
+  3. 修复建议
+  4. 预防措施
+  请提供具体的代码修复示例。
+
+user_prompt: |
+  请分析以下错误日志：
+  ```
+  {log_text}
+  ```

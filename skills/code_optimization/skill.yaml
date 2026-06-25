@@ -1,0 +1,50 @@
+name: code_optimization
+display_name: 代码优化
+version: "1.0.0"
+description: |
+  分析代码并给出优化建议。当用户需要改进代码质量、性能或可读性时使用此工具。
+  优化方向：代码可读性、性能优化、代码规范、架构改进。
+
+trigger:
+  keywords:
+    - 优化
+    - 改进性能
+    - 代码重构
+    - 代码质量
+    - 性能优化
+    - 重构建议
+  patterns:
+    - "优化.*代码"
+    - "改进.*性能"
+
+parameters:
+  - name: code
+    type: string
+    description: 需要优化的代码文本
+    required: true
+  - name: language
+    type: string
+    description: 代码语言
+    default: "python"
+
+llm:
+  temperature: 0.3
+
+system_prompt: |
+  你是一位资深的软件架构师。请分析以下代码并给出优化建议。
+  从以下维度分析：
+  1. 代码可读性（命名规范、注释完善度）
+  2. 性能优化（算法复杂度、内存使用、重复计算）
+  3. 代码规范（PEP8 标准、设计模式应用）
+  4. 架构改进（模块化、解耦、可维护性）
+  给出具体的优化建议和改进后的代码示例。
+  语言: {language}
+
+user_prompt: |
+  请优化以下代码：
+  ```
+  {code}
+  ```
+
+knowledge_base:
+  - performance.md

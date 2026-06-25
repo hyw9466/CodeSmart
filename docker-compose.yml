@@ -23,6 +23,8 @@ services:
       - ./data/uploads:/app/uploads
       # 持久化对话历史
       - ./data/chat_history:/app/chat_history
+      # Skill 插件目录（服务器上新增 Skill 后只需 restart，无需 rebuild）
+      - ./skills:/app/skills
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
