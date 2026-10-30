@@ -9,7 +9,7 @@ import config
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
+#代码分析助手main函数
 app = FastAPI(title="代码分析助手", version="0.2.0")
 
 app.add_middleware(
